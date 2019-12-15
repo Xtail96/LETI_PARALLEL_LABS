@@ -9,19 +9,19 @@ int main(int argc, char* argv[]){
     
     //declare size of processes (group id, group size(return))
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
-    //printf("%d\n", ProcNum);
 
     //define process rank in groud (group id, rank(return))
     MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
     if ( ProcRank == 0 )
     {
         //Действия, выполняемые только процессом с рангом 0
-        printf ("\n Hello from main process %3d", ProcRank);
+        printf ("Hello from main process %3d \n", ProcRank);
+
         for (int i = 1; i < ProcNum; i++)
         {
             //receive data (buffer, buffer size, buffer data type, sender number,message id, group id,status)
             MPI_Recv(&RecvRank, 1, MPI_INT, i, MPI_ANY_TAG, MPI_COMM_WORLD, &Status);
-            printf("\n Hello from process %3d", RecvRank);
+            printf("Hello from process %3d \n", RecvRank);
         }
     }
     else
