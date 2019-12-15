@@ -13,5 +13,5 @@ mpicc -o <target_name> <file.c>
 
 ## Running
 ```
-mpirun <file>
+mpirun --hostfile <hostfile> -np <process_count> <file>
 ```
