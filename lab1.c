@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     //declare size of processes (group id, group size(return))
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
 
-    int len = 10;
+    int len = 100;
     string str = makeString(len);
 
     int* rands = malloc(ProcNum * sizeof(int));
@@ -44,22 +44,22 @@ int main(int argc, char* argv[])
     if ( ProcRank == 0 )
     {
         // (buffer, buffer size, buffer data type, receiver process number, message id, group id)
-        MPI_Send(str, sizeof(str), MPI_CHAR, 1, 0, MPI_COMM_WORLD);
+        MPI_Send(str, len, MPI_CHAR, 1, 0, MPI_COMM_WORLD);
 
         // (buffer, buffer size, buffer data type, sender number,message id, group id,status)
-        MPI_Recv(str, sizeof(str), MPI_CHAR, ProcNum - 1, MPI_ANY_TAG, MPI_COMM_WORLD, &Status);
+        MPI_Recv(str, len, MPI_CHAR, ProcNum - 1, MPI_ANY_TAG, MPI_COMM_WORLD, &Status);
         printf("modifiedString:  %3s \n", str);
     }
     else
     {
-        MPI_Recv(str, sizeof(str), MPI_CHAR, ProcRank - 1, MPI_ANY_TAG, MPI_COMM_WORLD, &Status);
+        MPI_Recv(str, len, MPI_CHAR, ProcRank - 1, MPI_ANY_TAG, MPI_COMM_WORLD, &Status);
         
         int tmp = ProcRank + 1;
         str[rands[ProcRank - 1]] = '1';
         
         tmp >= ProcNum ?
-            MPI_Send(str, sizeof(str), MPI_CHAR, 0, 0, MPI_COMM_WORLD) :
-            MPI_Send(str, sizeof(str), MPI_CHAR, tmp, 0, MPI_COMM_WORLD);
+            MPI_Send(str, len, MPI_CHAR, 0, 0, MPI_COMM_WORLD) :
+            MPI_Send(str, len, MPI_CHAR, tmp, 0, MPI_COMM_WORLD);
     }
 
     MPI_Finalize(); //parallel part of app finish
