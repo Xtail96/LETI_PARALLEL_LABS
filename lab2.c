@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 		    {
 				NextProcRank = NextProcRank + 1;
 		    }
-		    printf("%3d throw boll to %3d \n\n", ProcRank, NextProcRank);
+		    printf("%3d throw ball to %3d \n\n", ProcRank, NextProcRank);
 		    
 		    MPI_Send(&ProcRank, 1, MPI_INT, NextProcRank, 0, MPI_COMM_WORLD);
 		}
