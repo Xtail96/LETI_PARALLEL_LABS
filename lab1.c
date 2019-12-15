@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     int len = 100;
     string str = makeString(len);
 
-    int* rands = malloc(ProcNum * sizeof(int));
+    int rands[ProcNum];
     for(int i = 0; i < ProcNum; i++)
     {
         rands[i] = rand() % (len - 1);
@@ -64,7 +64,6 @@ int main(int argc, char* argv[])
 
     MPI_Finalize(); //parallel part of app finish
 
-    free(rands);
     free(str);
     return 0;
 }
