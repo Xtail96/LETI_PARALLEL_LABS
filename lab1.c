@@ -8,6 +8,7 @@ string makeString(const int len) {
     string s = (char*) malloc(len*sizeof(char));
     if (s == NULL) {
         printf("Allocation error.");
+        MPI_Finalize();
         exit(0);
     }
 
@@ -43,10 +44,10 @@ int main(int argc, char* argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
     if ( ProcRank == 0 )
     {
-        // (buffer, buffer size, buffer data type, receiver process number, message id, group id)
+        // (buffer, buffer size, buffer data type, receiver process number, message tag, group id)
         MPI_Send(str, len, MPI_CHAR, 1, 0, MPI_COMM_WORLD);
 
-        // (buffer, buffer size, buffer data type, sender number,message id, group id,status)
+        // (buffer, buffer size, buffer data type, sender number,message tag, group id,status)
         MPI_Recv(str, len, MPI_CHAR, ProcNum - 1, MPI_ANY_TAG, MPI_COMM_WORLD, &Status);
         printf("modifiedString:  %3s \n", str);
     }

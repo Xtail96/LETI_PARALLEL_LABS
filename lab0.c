@@ -19,7 +19,7 @@ int main(int argc, char* argv[]){
 
         for (int i = 1; i < ProcNum; i++)
         {
-            //receive data (buffer, buffer size, buffer data type, sender number,message id, group id,status)
+            //receive data (buffer, buffer size, buffer data type, sender number,message tag, group id,status)
             MPI_Recv(&RecvRank, 1, MPI_INT, i, MPI_ANY_TAG, MPI_COMM_WORLD, &Status);
             printf("Hello from process %3d \n", RecvRank);
         }
@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
     {
         // Сообщение, отправляемое всеми процессами, кроме процесса с рангом 0
 
-        //send data (buffer, buffer size, buffer data type, receiver process number, message idm group id)
+        //send data (buffer, buffer size, buffer data type, receiver process number, message tag, group id)
         MPI_Send(&ProcRank,1,MPI_INT,0,0, MPI_COMM_WORLD);
     }
 
