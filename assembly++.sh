@@ -7,5 +7,5 @@ case ${1} in
 		mpirun --hostfile hostfile -np ${3} ${2}.out;;
 	'launch')
 		mpic++ -std=c++11 -o ${2}.out ${2}.cpp
-		mpirun --hostfile hostfile -np ${3} ${2}.out;;
+		mpirun --hostfile hostfile -n ${3} --oversubscribe ${2}.out;;
 esac	
