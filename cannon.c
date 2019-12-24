@@ -164,7 +164,7 @@ int main(int argc, char *argv[]) {
                 B[l * block_size + o] = buffB1[l * block_size + o];
             }
         }
-        multiply(A, B, C, block_size);
+        matrixMultiplicationSequential(A, B, C, block_size);
     }
 
     if (ProcRank == 0) {
