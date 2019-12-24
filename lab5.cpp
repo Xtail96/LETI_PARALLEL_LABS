@@ -1,18 +1,15 @@
 #include <mpi.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <math.h>
-//#include <ctime>
-//#include <chrono>
+#include <iostream>
 
 #include "matrix_functions.h"
 
 int ProcNum; 
 int ProcRank;
-int flag=0;
+int debug_info=0;
 int Size;
-double *A;  double *B; double *C;
+double *A;
+double *B;
+double *C;
 
 double matrixMultiplicationParallelRibbon(double *A, double *B,  double *C, int size){
     int i = 0, j = 0;
@@ -79,7 +76,7 @@ void InitProcess (double* &A,double* &B,double* &C ,int &Size) {
     if (ProcRank == 0) {
         Size = ProcNum;
     }
-    if (Size<10) flag=1;
+
     MPI_Bcast(&Size, 1, MPI_INT, 0, MPI_COMM_WORLD);
     
     if (ProcRank == 0) {
@@ -100,15 +97,12 @@ int main(int argc, char **argv) {
     double parallel_latency = matrixMultiplicationParallelRibbon(A,B,C,Size);
 
     if (ProcRank == 0) {
-        printf ("\n");
-        printf("\nTime of execution -  Parallel calculation:\n");
-        printf("%7.4f", parallel_latency);
+        std:: cout << std::endl << "Parallel latency = " << parallel_latency << std::endl;
          
-        double sequential_latency = matrixMultiplicationSequential(A, B, C, Size); 
-        printf("\nTime of execution -  Sequential calculation:\n");
-        printf("%7.4f", sequential_latency);
+        double sequential_latency = matrixMultiplicationSequential(A, B, C, Size);
+        std:: cout << std::endl << "Sequential latency = " << sequential_latency << std::endl;
         
-        if (flag) {
+        if (debug_info) {
             printMatrices(A, B, C, Size);
         }   
     }
