@@ -130,42 +130,6 @@ class MPIQueue {
 		}
 };
 
-// Основная функция главного процесса
-void master(int argc, char* argv[])
-{
-	// push to max, pop to 0, check data
-
-	int size;
-	MPI_Comm_size(MPI_COMM_WORLD, &size); // Функция определения числа процессов в области связи MPI_Comm_size
-
-	--size; // Минус процесс с рангом 0
-
-	MPIQueue queue(size); // очередь
-
-	value_type val = 0;
-
-	if (queue.pop() || queue.get(val)) {
-		std::cerr << "get from empty queue";
-		return;
-	}
-
-	// заполняем очередь
-	while (queue.push(val++)) {}
-
-	for (unsigned i = 0; i < size; ++i) {
-
-		if (!queue.get(val) || !queue.pop()) {
-			std::cerr << "get from full queue";
-			return;
-		}
-
-		if (i != val) {
-			std::cerr << "get wrong: " << val << "expected " << i;
-			return;
-		}
-	}
-}
-
 // Основная функция для дочерних процессов
 void slave(MPI_Status& status)
 {
@@ -288,15 +252,6 @@ int main(int argc, char* argv[])
 			}
 			break;
 		}
-
-		/*master(argc, argv);
-
-		Command cmd(Command::STOP);
-		for(int i = 1; i < size; ++i)
-		{
-			MPI_Send(&cmd, 1, ControlType, i, int(Tags::CONTROL), MPI_COMM_WORLD);
-		}*/
-
 	}
 	else
 	{
