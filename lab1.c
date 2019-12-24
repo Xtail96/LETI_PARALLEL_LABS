@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
         // (buffer, buffer size, buffer data type, sender number,message tag, group id,status)
         MPI_Recv(str, len, MPI_CHAR, ProcNum - 1, MPI_ANY_TAG, MPI_COMM_WORLD, &Status);
-        printf("modifiedString:  %3s \n", str);
+        printf("Result:  %3s \n", str);
     }
     else
     {
@@ -57,6 +57,7 @@ int main(int argc, char* argv[])
         
         int tmp = ProcRank + 1;
         str[rands[ProcRank - 1]] = '1';
+        printf("Child process modified string: %3s \n", str);
         
         tmp >= ProcNum ?
             MPI_Send(str, len, MPI_CHAR, 0, 0, MPI_COMM_WORLD) :
