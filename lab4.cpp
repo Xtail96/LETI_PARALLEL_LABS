@@ -41,15 +41,15 @@ using value_type = int;
  */
 class MPIQueue {
 private:
-	unsigned it_ = 0; // С какого места начинаем писать в очередь
-	unsigned size_ = 0; // Размер уже записанного
-	const unsigned capacity_; // Размер FIFO. Зависит от количества процессов или процессоров
+	unsigned m_start_index = 0; // С какого места начинаем писать в очередь
+	unsigned m_already_written = 0; // Размер уже записанного
+	const unsigned m_size; // Размер FIFO. Зависит от количества процессов или процессоров
 public:
 	/*
 	 * Конструктор класса.
 	 * capacity - общее количество процессов.
 	 */
-	MPIQueue(unsigned capacity) : capacity_(capacity) {}
+	MPIQueue(unsigned capacity) : m_size(capacity) {}
 
 	/*
 	 * Производит запись данных.
@@ -57,16 +57,16 @@ public:
 	 */
 	bool push(const value_type &val)
 	{
-		if (size_ == capacity_)
+		if (m_already_written == m_size)
 			return false;
 		
-		unsigned pos = (it_ + size_) % capacity_;
+		unsigned pos = (m_start_index + m_already_written) % m_size;
 
 		Command cmd(Command::PUSH);
 		MPI_Send(&cmd, 1, ControlType, pos + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
 		MPI_Send(&val, 1, DataType, pos + 1, int(Tags::DATA), MPI_COMM_WORLD);
 
-		++size_;
+		++m_already_written;
 		return true;
 	}
 
@@ -76,12 +76,12 @@ public:
 	 */
 	bool get(value_type &val) const
 	{
-		if (size_ == 0)
+		if (m_already_written == 0)
 			return false;
 
 		Command cmd(Command::GET);
-		MPI_Send(&cmd, 1, ControlType, it_ + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
-		MPI_Recv(&val, 1, DataType, it_ + 1, int(Tags::DATA), MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		MPI_Send(&cmd, 1, ControlType, m_start_index + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
+		MPI_Recv(&val, 1, DataType, m_start_index + 1, int(Tags::DATA), MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 		return true;
 	}
 
@@ -90,14 +90,14 @@ public:
 	 */
 	bool pop()
 	{
-		if (size_ == 0)
+		if (m_already_written == 0)
 			return false;
 
 		Command cmd(Command::POP);
-		MPI_Send(&cmd, 1, ControlType, it_ + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
+		MPI_Send(&cmd, 1, ControlType, m_start_index + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
 
-		it_ = (it_ + 1) % capacity_;
-		--size_;
+		m_start_index = (m_start_index + 1) % m_size;
+		--m_already_written;
 		return true;
 	}
 };
