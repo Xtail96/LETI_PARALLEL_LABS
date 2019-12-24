@@ -14,6 +14,18 @@ int main(int argc, char *argv[])
 	       Matrix[i][j] = rand() % 10;
 	   }
     }
+
+    printf("original matrix");
+    for(int i = 0; i < M; i++)
+    {
+        for(int j = 0; j < N; j++)
+        {
+            Matrix[i][j] = rand() % 10;
+            printf(" %3d", Matrix[i][j]);
+        }
+        printf("\n");
+    }
+
     int Result;
 
     int ProcNum, ProcRank;
@@ -38,7 +50,7 @@ int main(int argc, char *argv[])
 
     if (ProcRank == 0)
     {   
-        printf("%3d\n", Result);    
+        printf("Result = %3d\n", Result);    
     }
 
     MPI_Finalize();
