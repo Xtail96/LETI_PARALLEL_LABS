@@ -109,7 +109,16 @@ void MatrixMultiplicationMPI2(double *A, double *B,  double *C,int size){
    MPI_Gather(bufC, ProcPartElem, MPI_DOUBLE, C, ProcPartElem, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
 
-//--------------------------------------------------------
+void MatrixMultiplicationSequential(double *A, double *B, double *C, int size) {
+    for (int i=0; i<Size; i++){
+        for (int j=0; j<Size;j++) {
+            C[i*Size+j]=0;
+            for (int k=0; k<Size; k++){
+                C[i*Size+j] += A[i*Size+k]*B[j*Size+k];
+            }
+        }
+     }
+}
 
 int main(int argc, char **argv) {
     double beg, end, serial, parallel, notparallel=0;
@@ -125,19 +134,10 @@ int main(int argc, char **argv) {
         printf("\nTime of execution -  Parallel calculation:\n");
         printf("%7.4f",parallel);
         
-        auto non_paral_beg=std::chrono::system_clock::now();
-        
-        for (int i=0; i<Size; i++){
-            for (int j=0; j<Size;j++) {
-                C[i*Size+j]=0;
-                for (int k=0; k<Size; k++){
-                    C[i*Size+j] += A[i*Size+k]*B[j*Size+k];
-                }
-            }
-        }
-        
-        auto non_paral_end=std::chrono::system_clock::now(); 
-        notparallel= std::chrono::duration<double>(end-beg).count(); 
+        auto non_paral_beg=std::chrono::system_clock::now();;
+        MatrixMultiplicationSequential(A, B, C, Size);
+        auto non_paral_end=std::chrono::system_clock::now();; 
+        notparallel=std::chrono::duration<double>(non_paral_end-non_paral_beg).count();; 
         printf("\nTime of execution -  Sequential calculation:\n");
         printf("%7.4f",notparallel);
         
