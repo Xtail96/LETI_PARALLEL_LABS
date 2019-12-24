@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    multiply(A, B, C, block_size);
+    matrixMultiplicationSequential(A, B, C, block_size);
 
     for (i = 1; i < communicator_dimension; i++) {
         // Получение номеров соседей

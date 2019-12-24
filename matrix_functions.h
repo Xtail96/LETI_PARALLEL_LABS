@@ -26,6 +26,13 @@ void fillData(int *A, int *B, int *C, int blockSize, int step) {
     }
 }
 
+void RandInit (double* pMatrix, int Size) {
+    srand(100);
+    for (int i=0; i<Size; i++) {
+        for (int j=0;j<Size;j++)  pMatrix[i*Size+j]=rand()/double(1000);
+    }
+}
+
 void printMatrix(int *M, int matrixSize) {
     for (int i = 0; i < matrixSize; i++) {
         for (int j = 0; j < matrixSize; j++) {
@@ -35,7 +42,8 @@ void printMatrix(int *M, int matrixSize) {
     }
 }
 
-void multiply(int *a, int *b, int *c, int n) {
+double matrixMultiplicationSequential(double *a, double *b, double *c, int n) {
+    double time_start = MPI_Wtime();
     int i, j, k;
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
@@ -44,27 +52,29 @@ void multiply(int *a, int *b, int *c, int n) {
             }
         }
     }
+    double time_finish = MPI_Wtime();
+    return time_finish - time_start;
 }
 
-void printMatrices(int *A, int *B, int *C, int blockSize) {
+void printMatrices(double *A, double *B, double *C, int blockSize) {
     printf("\nProcess 0: MATRIX A\n");
     for (int i = 0; i < blockSize; i++) {
         for (int j = 0; j < blockSize; j++) {
-            printf(" %d ", A[i * blockSize + j]);
+            printf(" %f ", A[i * blockSize + j]);
         }
         printf("\n");
     }
     printf("\nProcess 0: MATRIX B\n");
     for (int i = 0; i < blockSize; i++) {
         for (int j = 0; j < blockSize; j++) {
-            printf(" %d ", B[i * blockSize + j]);
+            printf(" %f ", B[i * blockSize + j]);
         }
         printf("\n");
     }
     printf("\nProcess 0: MATRIX C\n");
     for (int i = 0; i < blockSize; i++) {
         for (int j = 0; j < blockSize; j++) {
-            printf(" %d ", C[i * blockSize + j]);
+            printf(" %f ", C[i * blockSize + j]);
         }
         printf("\n");
     }

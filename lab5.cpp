@@ -3,92 +3,51 @@
 #include <stdlib.h>
 
 #include <math.h>
-#include <ctime>
-#include <chrono>
+//#include <ctime>
+//#include <chrono>
+
+#include "matrix_functions.h"
+
 int ProcNum; 
 int ProcRank;
 int flag=0;
 int Size;
 double *A;  double *B; double *C;
 
-//***********************************************************
-void PrintMatrix(double* pMatrix,int Size) {
-    for (int i=0;i<Size;i++) {printf("\n");
-        for (int j=0;j<Size;j++)
-            printf("%7.4f ",pMatrix[i*Size+j]);
-    }
-}
-//------------------------------------------------------------
-void RandInit (double* pMatrix, int Size) {
-    srand(100);
-    for (int i=0; i<Size; i++) {
-        for (int j=0;j<Size;j++)  pMatrix[i*Size+j]=rand()/double(1000);
-    }
-}
-//-------------------------------------------------
-void InitProcess (double* &A,double* &B,double* &C ,int &Size) {
-    MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
-    MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
-    if (ProcRank == 0) {
-        Size = ProcNum;
-    }
-    if (Size<10) flag=1;
-    MPI_Bcast(&Size, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    
-    if (ProcRank == 0) {
-        A = new double [Size*Size];
-        B = new double [Size*Size];
-        C = new double [Size*Size];
-        RandInit (A, Size); RandInit (B, Size);
-    }
-}
-//-------------------------------------------------
-void Flip (double *&B, int dim) {
-    double temp=0.0;
-    for (int i=0; i<dim; i++){
-        for (int j=i+1; j<dim; j++){
-            temp=B[i*dim+j];
-            B[i*dim+j]=B[j*dim+i];
-            B[j*dim+i]=temp;
-        }
-    }
-}
-//-------------------------------------------------
-double MatrixMultiplicationMPI2(double *A, double *B,  double *C,int size){
-	double beg, end, serial, parallel;
-   int i = 0, j = 0;
+double matrixMultiplicationParallelRibbon(double *A, double *B,  double *C, int size){
+    int i = 0, j = 0;
 
-   double *bufA, *bufB, *bufC;
-   int dim = size;
+    double *bufA, *bufB, *bufC;
+    int dim = size;
 
-   MPI_Status Status;
+    MPI_Status Status;
 
-   int ProcPartsize = dim/ProcNum;
-   int ProcPartElem = ProcPartsize*dim;
+    int ProcPartsize = dim/ProcNum;
+    int ProcPartElem = ProcPartsize*dim;
 
-   bufA = new double[ProcPartElem];
-   bufB = new double[ProcPartElem];
-   bufC = new double[ProcPartElem];
+    bufA = new double[ProcPartElem];
+    bufB = new double[ProcPartElem];
+    bufC = new double[ProcPartElem];
 
-   for (i = 0; i < ProcPartElem; i++)
-   {
+    for (i = 0; i < ProcPartElem; i++)
+    {
         bufC[i] = 0;
-   }
-      
-    beg=MPI_Wtime();
-   MPI_Scatter(A, ProcPartElem, MPI_DOUBLE, bufA, ProcPartElem, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-   MPI_Scatter(B, ProcPartElem, MPI_DOUBLE, bufB, ProcPartElem, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    }
+        
+    double time_start = MPI_Wtime();
+    MPI_Scatter(A, ProcPartElem, MPI_DOUBLE, bufA, ProcPartElem, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Scatter(B, ProcPartElem, MPI_DOUBLE, bufB, ProcPartElem, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-   int k = 0 ;
-   int NextProc = ProcRank + 1;
-   if ( ProcRank == ProcNum - 1 ) NextProc = 0;
+    int k = 0 ;
+    int NextProc = ProcRank + 1;
+    if ( ProcRank == ProcNum - 1 ) NextProc = 0;
 
-   int PrevProc = ProcRank - 1;
-   if ( ProcRank == 0 ) PrevProc = ProcNum - 1;
+    int PrevProc = ProcRank - 1;
+    if ( ProcRank == 0 ) PrevProc = ProcNum - 1;
 
-   int PrevDataNum = ProcRank;
-   for (int p = 0; p < ProcNum; p++)
-   {
+    int PrevDataNum = ProcRank;
+    for (int p = 0; p < ProcNum; p++)
+    {
         for (i = 0; i < ProcPartsize; i++)
         {
             for (j = 0; j < size; j++)
@@ -106,53 +65,51 @@ double MatrixMultiplicationMPI2(double *A, double *B,  double *C,int size){
             PrevDataNum = ProcNum - 1;
 
         MPI_Sendrecv_replace(bufB, ProcPartElem, MPI_DOUBLE, NextProc, 0, PrevProc, 0, MPI_COMM_WORLD, &Status);
-   }
+    }
 
-   MPI_Gather(bufC, ProcPartElem, MPI_DOUBLE, C, ProcPartElem, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-   
-    end=MPI_Wtime(); 
-    parallel= end-beg;
-    return parallel;
+    MPI_Gather(bufC, ProcPartElem, MPI_DOUBLE, C, ProcPartElem, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    
+    double time_finish = MPI_Wtime();
+    return time_finish - time_start;
 }
 
-double MatrixMultiplicationSequential(double *A, double *B, double *C, int size) {
-    //auto non_paral_beg=std::chrono::system_clock::now();
-    double sync_begin = MPI_Wtime();
-    for (int i=0; i<Size; i++){
-        for (int j=0; j<Size;j++) {
-            C[i*Size+j]=0;
-            for (int k=0; k<Size; k++){
-                C[i*Size+j] += A[i*Size+k]*B[j*Size+k];
-            }
-        }
-     }
-    double sync_end = MPI_Wtime();
-    return sync_end - sync_begin;
-    //auto non_paral_end=std::chrono::system_clock::now();
-    //return std::chrono::duration<double>(non_paral_end-non_paral_beg).count();
+void InitProcess (double* &A,double* &B,double* &C ,int &Size) {
+    MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
+    MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
+    if (ProcRank == 0) {
+        Size = ProcNum;
+    }
+    if (Size<10) flag=1;
+    MPI_Bcast(&Size, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    
+    if (ProcRank == 0) {
+        A = new double [Size*Size];
+        B = new double [Size*Size];
+        C = new double [Size*Size];
+        RandInit (A, Size); RandInit (B, Size);
+    }
 }
+
 
 int main(int argc, char **argv) {
     double beg, end, serial;
-    double async_latency;
-    double sync_latency;
+
     MPI_Init ( &argc, &argv );  
     InitProcess (A,B,C,Size);
-    async_latency = MatrixMultiplicationMPI2(A,B,C,Size);
+    
+    double parallel_latency = matrixMultiplicationParallelRibbon(A,B,C,Size);
 
     if (ProcRank == 0) {
         printf ("\n");
         printf("\nTime of execution -  Parallel calculation:\n");
-        printf("%7.4f",async_latency);
+        printf("%7.4f", parallel_latency);
          
-        sync_latency= MatrixMultiplicationSequential(A, B, C, Size); 
+        double sequential_latency = matrixMultiplicationSequential(A, B, C, Size); 
         printf("\nTime of execution -  Sequential calculation:\n");
-        printf("%7.4f",sync_latency);
+        printf("%7.4f", sequential_latency);
         
         if (flag) {
-            printf("\nMatrix C - Parallel calculation\n");
-            PrintMatrix(C,Size);
-            printf("\n\n");
+            printMatrices(A, B, C, Size);
         }   
     }
     MPI_Finalize();
