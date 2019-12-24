@@ -286,7 +286,7 @@ int main(int argc, char* argv[])
 			{
 				MPI_Send(&cmd, 1, ControlType, i, int(Tags::CONTROL), MPI_COMM_WORLD);
 			}
-			return 0;
+			break;
 		}
 
 		/*master(argc, argv);
