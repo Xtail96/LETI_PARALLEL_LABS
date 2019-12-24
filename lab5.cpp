@@ -97,10 +97,10 @@ int main(int argc, char **argv) {
     double parallel_latency = matrixMultiplicationParallelRibbon(A,B,C,Size);
 
     if (ProcRank == 0) {
-        std:: cout << std::endl << "Parallel latency = " << parallel_latency << std::endl;
+        std::cout << std::fixed << std::endl << "Parallel latency = " << parallel_latency << std::endl;
          
         double sequential_latency = matrixMultiplicationSequential(A, B, C, Size);
-        std:: cout << std::endl << "Sequential latency = " << sequential_latency << std::endl;
+        std::cout << std::fixed << std::endl << "Sequential latency = " << sequential_latency << std::endl;
         
         if (debug_info) {
             printMatrices(A, B, C, Size);
