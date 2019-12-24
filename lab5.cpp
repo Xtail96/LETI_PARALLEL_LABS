@@ -6,7 +6,8 @@
 //#include <curses.h>
 //
 #include <math.h>
-#include <time.h>
+#include <ctime>
+#include <chrono>
 int ProcNum; 
 int ProcRank;
 int flag=0;
@@ -32,12 +33,7 @@ void InitProcess (double* &A,double* &B,double* &C ,int &Size) {
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
     MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
     if (ProcRank == 0) {
-        do {printf("\n--Square matrix multiplication--");
-            printf("\nPlease, enter matrix size: "); scanf("%d", &Size);     
-            if (Size< ProcNum) printf("Matrix size is less than the number of processes! \n");
-            if (Size%ProcNum!=0) printf("Matrix size should be dividable by the number of processes! \n");
-        }
-        while ((Size< ProcNum)||(Size%ProcNum!=0));
+        Size = ProcNum;
     }
     if (Size<10) flag=1;
     MPI_Bcast(&Size, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -121,20 +117,13 @@ void MatrixMultiplicationMPI2(double *A, double *B,  double *C,int size){
    int i = 0, j = 0;
 
    double *bufA, *bufB, *bufC;
-
- 
-
    int dim = size;
-
- 
 
    MPI_Status Status;
 
    int ProcPartsize = dim/ProcNum;
 
    int ProcPartElem = ProcPartsize*dim;
-
- 
 
    bufA = new double[ProcPartElem];
 
@@ -218,13 +207,14 @@ int main(int argc, char **argv) {
     MatrixMultiplicationMPI(A,B,C,Size);
     end=MPI_Wtime(); 
     parallel= end-beg; 
+
     if (ProcRank == 0) {
         // printf("\n",&ProcNum);
         printf ("\n");
         printf("\nTime of execution -  Parallel calculation:\n");
         printf("%7.4f",parallel);
         
-        beg=MPI_Wtime();
+        auto non_paral_beg=std::chrono::system_clock::now();
         
         for (int i=0; i<Size; i++){
             for (int j=0; j<Size;j++) {
@@ -235,8 +225,8 @@ int main(int argc, char **argv) {
             }
         }
         
-        end=MPI_Wtime(); 
-        notparallel= end-beg; 
+        auto non_paral_end=std::chrono::system_clock::now(); 
+        notparallel= std::chrono::duration<double>(end-beg).count(); 
         printf("\nTime of execution -  Not Parallel calculation:\n");
         printf("%7.4f",notparallel);
         
