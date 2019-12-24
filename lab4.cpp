@@ -5,7 +5,6 @@
 #include <random>
 #include <algorithm>
 
-//#include <boost/mpi.hpp>
 #include "mpi.h"
 
 #define DataType MPI_INT
@@ -13,26 +12,22 @@
 
 using namespace std;
 
-/*
-* Id процесса с рангом 0
-*/
+//Id процесса с рангом 0
 constexpr int ROOT_RANK = 0;
 
 /*
 * Идентификаторы сообщений для MPI_Send и MPI_Recv
-* Идентификатор от 0 - 1, сообщает процессу что он получил, команду или данные
 */
-
-enum class Tags : int { // Перечисление
-	CONTROL,
-	DATA,
+enum Tags
+{
+	CONTROL, // получена команда
+	DATA, // получены данные
 };
 
-/*
-* Управляющие команды/сигналы для дочерних процессов, что работают с FIFO
-*/
 
-enum class Command : unsigned {  // Перечисление
+// Управляющие команды/сигналы для дочерних процессов, работающих с FIFO
+enum Command
+{
 	PUSH, // Положить в буфер
 	GET, // Получить из буфера
 	POP, // Удалить из буфера
@@ -40,33 +35,26 @@ enum class Command : unsigned {  // Перечисление
 };
 
 using value_type = int;
-//constexpr MPI_Datatype DataType = MPI_INT; // Ссылки на типы из библиотеки MPI
-//constexpr MPI_Datatype ControlType = MPI_UNSIGNED; // Ссылки на типы из библиотеки MPI
 
 /*
-* Реализация FIFO по типу очереди
-* Первый вошёл – первый вышел
-*/
-
+ * Реализация FIFO по типу очереди
+ */
 class MPIQueue {
-
-
+private:
 	unsigned it_ = 0; // С какого места начинаем писать в очередь
 	unsigned size_ = 0; // Размер уже записанного
 	const unsigned capacity_; // Размер FIFO. Зависит от количества процессов или процессоров
-
 public:
-
 	/*
-	*
-	* Конструктор класса.
-	* Получает от процесса 0, общее количество процессов
-	*/
+	 * Конструктор класса.
+	 * capacity - общее количество процессов.
+	 */
 	MPIQueue(unsigned capacity) : capacity_(capacity) {}
 
 	/*
-	* Послать всем дочерним процессам сигнал записи и данные
-	*/
+	 * Производит запись данных.
+	 * Посылает сначала команду записи, затем данные для записи.
+	 */
 	bool push(const value_type &val)
 	{
 		if (size_ == capacity_)
@@ -83,9 +71,9 @@ public:
 	}
 
 	/*
-	* Послать всем дочерним процессам сигнал на получение данных
-	* Собёрем что у них есть
-	*/
+	 * Получает данные из очереди.
+	 * val - переменная для хранения результата.
+	 */
 	bool get(value_type &val) const
 	{
 		if (size_ == 0)
@@ -98,13 +86,12 @@ public:
 	}
 
 	/*
-	* Послать всем дочерним процессам сигнал на удаление данных из FIFO
-	*/
+	 * Удаляет данные из FIFO
+	 */
 	bool pop()
 	{
 		if (size_ == 0)
 			return false;
-
 
 		Command cmd(Command::POP);
 		MPI_Send(&cmd, 1, ControlType, it_ + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
@@ -113,14 +100,12 @@ public:
 		--size_;
 		return true;
 	}
-
 };
 
 /*
 * Процесс с рангом 0
 * Управляет всеми остальными процессами
 */
-
 void master(int argc, char* argv[])
 {
 	// push to max, pop to 0, check data
