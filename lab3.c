@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 	   }
     }
 
-    printf("original matrix");
+    printf("original matrix\n");
     for(int i = 0; i < M; i++)
     {
         for(int j = 0; j < N; j++)
