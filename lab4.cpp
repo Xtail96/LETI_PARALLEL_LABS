@@ -100,6 +100,34 @@ class MPIQueue {
 			--m_already_written;
 			return true;
 		}
+
+		void print()
+		{
+			vector<value_type> currentState;
+
+			int currentQueueSize = this->m_already_written;
+			for(int i = 0; i < currentQueueSize; i++)
+			{
+				value_type item;
+				if(!this->get(item))
+				{
+					cout << "print queue error " << i << endl;
+					break;
+				}
+
+				this->pop();
+
+				currentState.push_back(item);
+			}
+
+			cout << "queue = [";
+			for(auto item : currentState)
+			{
+				cout << item << ", ";
+				this->push(item);
+			}
+			cout << "];" << endl;
+		}
 };
 
 // Основная функция главного процесса
@@ -162,15 +190,9 @@ void slave(MPI_Status& status)
 		{
 			// сохраняет данные в ячейку очереди
 			case Command::PUSH:
-				if (full) {
-					std::cout << "already filled" << std::endl;
-				}
-
 				if (MPI_Recv(&storage, 1, DataType, ROOT_RANK, int(Tags::DATA), MPI_COMM_WORLD, &status))
 					return;
 				full = true;
-
-				std::cout << "push " << storage << std::endl;
 				break;
 
 			// возвращает данные из ячейки очереди
@@ -178,13 +200,11 @@ void slave(MPI_Status& status)
 				if (MPI_Send(&storage, 1, DataType, ROOT_RANK, int(Tags::DATA), MPI_COMM_WORLD)) {
 					return;
 				}
-				std::cout << "get " << storage << std::endl;
 				break;
 
 			// очищает очередь
 			case Command::POP:
 				full = false;
-				std::cout << "pop " << storage << std::endl;
 				break;
 
 			// прерывает цикл выполенния
@@ -192,6 +212,23 @@ void slave(MPI_Status& status)
 				return;
 		}
 	}
+}
+
+void printMainMenu()
+{
+	cout << endl << "Select action:" << endl;
+	cout << "1 - push" << endl;
+	cout << "2 - pop" << endl;
+	cout << "3 - exit"<< endl;
+}
+
+value_type pushDialogResult()
+{
+	cout << endl << "Push" << endl;
+	cout << "Input integer value" << endl;
+	value_type value;
+	cin >> value;
+	return value;
 }
 
 // точка входа в программу
@@ -208,13 +245,57 @@ int main(int argc, char* argv[])
 
 	if (rank == 0)
 	{
-		master(argc, argv);
+		MPIQueue queue(size - 1);
+
+		for(;;)
+		{
+			printMainMenu();
+			int action;
+			cin >> action;
+
+			if(action == 1)
+			{
+				value_type value = pushDialogResult(); 
+				if(!queue.push(value))
+				{
+					cout << "ERROR::queue is full" << endl;
+				}
+				queue.print();
+				continue;	
+			}
+
+			if(action == 2)
+			{
+				value_type value;
+				if(!queue.get(value))
+				{
+					cout << "ERROR::queue is empty" << endl;
+				}
+				cout << "get " << value << endl;
+
+
+				queue.pop();
+				cout << "pop " << value << endl;
+
+				queue.print();
+				continue;
+			}
+
+			Command cmd(Command::STOP);
+			for(int i = 1; i < size; ++i)
+			{
+				MPI_Send(&cmd, 1, ControlType, i, int(Tags::CONTROL), MPI_COMM_WORLD);
+			}
+			return 0;
+		}
+
+		/*master(argc, argv);
 
 		Command cmd(Command::STOP);
 		for(int i = 1; i < size; ++i)
 		{
 			MPI_Send(&cmd, 1, ControlType, i, int(Tags::CONTROL), MPI_COMM_WORLD);
-		}
+		}*/
 
 	}
 	else
