@@ -40,132 +40,96 @@ using value_type = int;
  * Реализация FIFO по типу очереди
  */
 class MPIQueue {
-private:
-	unsigned m_start_index = 0; // С какого места начинаем писать в очередь
-	unsigned m_already_written = 0; // Размер уже записанного
-	const unsigned m_size; // Размер FIFO. Зависит от количества процессов или процессоров
-public:
-	/*
-	 * Конструктор класса.
-	 * capacity - общее количество процессов.
-	 */
-	MPIQueue(unsigned capacity) : m_size(capacity) {}
+	private:
+		unsigned m_start_index = 0; // С какого места начинаем писать в очередь
+		unsigned m_already_written = 0; // Размер уже записанного
+		const unsigned m_size; // Размер FIFO. Зависит от количества процессов или процессоров
+	public:
+		/*
+		* Конструктор класса.
+		* capacity - общее количество процессов.
+		*/
+		MPIQueue(unsigned capacity) : m_size(capacity) {}
 
-	/*
-	 * Производит запись данных.
-	 * Посылает сначала команду записи, затем данные для записи.
-	 */
-	bool push(const value_type &val)
-	{
-		if (m_already_written == m_size)
-			return false;
-		
-		unsigned pos = (m_start_index + m_already_written) % m_size;
+		/*
+		* Производит запись данных.
+		* Посылает сначала команду записи, затем данные для записи.
+		*/
+		bool push(const value_type &val)
+		{
+			if (m_already_written == m_size)
+				return false;
+			
+			unsigned pos = (m_start_index + m_already_written) % m_size;
 
-		Command cmd(Command::PUSH);
-		MPI_Send(&cmd, 1, ControlType, pos + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
-		MPI_Send(&val, 1, DataType, pos + 1, int(Tags::DATA), MPI_COMM_WORLD);
+			Command cmd(Command::PUSH);
+			MPI_Send(&cmd, 1, ControlType, pos + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
+			MPI_Send(&val, 1, DataType, pos + 1, int(Tags::DATA), MPI_COMM_WORLD);
 
-		++m_already_written;
-		return true;
-	}
+			++m_already_written;
+			return true;
+		}
 
-	/*
-	 * Получает данные из очереди.
-	 * val - переменная для хранения результата.
-	 */
-	bool get(value_type &val) const
-	{
-		if (m_already_written == 0)
-			return false;
+		/*
+		* Получает данные из очереди.
+		* val - переменная для хранения результата.
+		*/
+		bool get(value_type &val) const
+		{
+			if (m_already_written == 0)
+				return false;
 
-		Command cmd(Command::GET);
-		MPI_Send(&cmd, 1, ControlType, m_start_index + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
-		MPI_Recv(&val, 1, DataType, m_start_index + 1, int(Tags::DATA), MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-		return true;
-	}
+			Command cmd(Command::GET);
+			MPI_Send(&cmd, 1, ControlType, m_start_index + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
+			MPI_Recv(&val, 1, DataType, m_start_index + 1, int(Tags::DATA), MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			return true;
+		}
 
-	/*
-	 * Удаляет данные из FIFO
-	 */
-	bool pop()
-	{
-		if (m_already_written == 0)
-			return false;
+		/*
+		* Удаляет данные из FIFO
+		*/
+		bool pop()
+		{
+			if (m_already_written == 0)
+				return false;
 
-		Command cmd(Command::POP);
-		MPI_Send(&cmd, 1, ControlType, m_start_index + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
+			Command cmd(Command::POP);
+			MPI_Send(&cmd, 1, ControlType, m_start_index + 1, int(Tags::CONTROL), MPI_COMM_WORLD);
 
-		m_start_index = (m_start_index + 1) % m_size;
-		--m_already_written;
-		return true;
-	}
+			m_start_index = (m_start_index + 1) % m_size;
+			--m_already_written;
+			return true;
+		}
 };
 
-/*
-* Процесс с рангом 0
-* Управляет всеми остальными процессами
-*/
+// Основная функция главного процесса
 void master(int argc, char* argv[])
 {
 	// push to max, pop to 0, check data
-
-	/*
-	for (;;) {
-		char cmd;
-		std::cin >> cmd;
-		switch (cmd) {
-		case '+':
-		case '-':
-		case '=':
-		case 'q':
-			return;
-		default:
-			std::cout << "unexpected command\n";
-		};
-	}
-	*/
 
 	int size;
 	MPI_Comm_size(MPI_COMM_WORLD, &size); // Функция определения числа процессов в области связи MPI_Comm_size
 
 	--size; // Минус процесс с рангом 0
 
-	MPIQueue queue(size); // Обёртка FIFO
+	MPIQueue queue(size); // очередь
 
 	value_type val = 0;
 
-	/*
-	* Тест
-	* 
-	* Неудачная попытка получить значение из пустого FIFO
-	*/
 	if (queue.pop() || queue.get(val)) {
 		std::cerr << "get from empty queue";
 		return;
 	}
 
-
-	while (queue.push(val++)) {} // Заполним буфер int
+	// заполняем очередь
+	while (queue.push(val++)) {}
 
 	for (unsigned i = 0; i < size; ++i) {
-
-		/*
-		* Тест 2
-		*
-		* Попытка получить значение из полного FIFO
-		*/
 
 		if (!queue.get(val) || !queue.pop()) {
 			std::cerr << "get from full queue";
 			return;
 		}
-
-		/*
-		* Тест 3
-		*
-		* Полученный результат не соответствует ожиданию
-		*/
 
 		if (i != val) {
 			std::cerr << "get wrong: " << val << "expected " << i;
@@ -174,50 +138,42 @@ void master(int argc, char* argv[])
 	}
 }
 
-/*
-* Процессы с рангом > 0
-*/
+// Основная функция для дочерних процессов
 void slave(MPI_Status& status)
 {
 	value_type storage;
 
-	bool full = false; // Флаг если очередь полна
+	// очередь полна
+	bool full = false;
 
-	/*
-	* Циклический буфер
-	*/
-	for (;;) {
+	// ожидание команды
+	for (;;)
+	{
 		Command cmd;
 
-		/*
-		* Процесс ожидает сигнал от мастера на прерывание цикла
-		*/
-		if (MPI_Recv(&cmd, 1, ControlType, ROOT_RANK, int(Tags::CONTROL), MPI_COMM_WORLD, &status)) {
+		// ожидание сигнала на прерывание цикла
+		if (MPI_Recv(&cmd, 1, ControlType, ROOT_RANK, int(Tags::CONTROL), MPI_COMM_WORLD, &status))
+		{
 			return;
 		}
 
-		switch (cmd) {
-
-			/*
-			* Получить данные от мастера и поместить их в очередь
-			*/
+		// обработка пришедшей команды
+		switch (cmd)
+		{
+			// сохраняет данные в ячейку очереди
 			case Command::PUSH:
-				/* 
-				* Тест 4
-				* Что-то сделать если очередь заполнилась
-				*/
 				if (full) {
-					// this is controlled in stack
+					std::cout << "already filled" << std::endl;
 				}
-				full = true;
+
 				if (MPI_Recv(&storage, 1, DataType, ROOT_RANK, int(Tags::DATA), MPI_COMM_WORLD, &status))
 					return;
+				full = true;
+
 				std::cout << "push " << storage << std::endl;
 				break;
 
-			/*
-			* Отправить данные мастеру
-			*/
+			// возвращает данные из ячейки очереди
 			case Command::GET:
 				if (MPI_Send(&storage, 1, DataType, ROOT_RANK, int(Tags::DATA), MPI_COMM_WORLD)) {
 					return;
@@ -225,27 +181,22 @@ void slave(MPI_Status& status)
 				std::cout << "get " << storage << std::endl;
 				break;
 
-			/*
-			* Очистить очередь
-			*/
+			// очищает очередь
 			case Command::POP:
-				/*
-				* Тест 5
-				* Что-то сделать если очередь пуста
-				*/
-				if(!full) {
-					// this is controlled in stack
-				}
 				full = false;
 				std::cout << "pop " << storage << std::endl;
 				break;
 
+			// прерывает цикл выполенния
 			case Command::STOP:
 				return;
 		}
 	}
 }
-int main(int argc, char* argv[]) {
+
+// точка входа в программу
+int main(int argc, char* argv[])
+{
 	int rank;
 	MPI_Status status;
 
@@ -255,15 +206,19 @@ int main(int argc, char* argv[]) {
 	int size;
 	MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-	// Если это процесс с 0 рангом
-	if (rank == 0) {
+	if (rank == 0)
+	{
 		master(argc, argv);
 
 		Command cmd(Command::STOP);
 		for(int i = 1; i < size; ++i)
+		{
 			MPI_Send(&cmd, 1, ControlType, i, int(Tags::CONTROL), MPI_COMM_WORLD);
+		}
 
-	} else {
+	}
+	else
+	{
 		slave(status);
 	}
 
