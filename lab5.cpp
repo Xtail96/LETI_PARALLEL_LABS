@@ -5,8 +5,8 @@
 
 int ProcNum; 
 int ProcRank;
-int debug_info=0;
-int Size;
+int debug_info=1;
+int Size = 5;
 double *A;
 double *B;
 double *C;
@@ -73,9 +73,6 @@ double matrixMultiplicationParallelRibbon(double *A, double *B,  double *C, int 
 void InitProcess (double* &A,double* &B,double* &C ,int &Size) {
     MPI_Comm_size(MPI_COMM_WORLD, &ProcNum);
     MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
-    if (ProcRank == 0) {
-        Size = ProcNum;
-    }
 
     MPI_Bcast(&Size, 1, MPI_INT, 0, MPI_COMM_WORLD);
     
