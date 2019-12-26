@@ -5,8 +5,8 @@
 
 int ProcNum; 
 int ProcRank;
-int debug_info=0;
-int Size = 200;
+int debug_info=1;
+int Size = 5;
 double *A;
 double *B;
 double *C;
