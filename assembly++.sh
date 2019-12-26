@@ -2,11 +2,10 @@
 
 case ${1} in
 	'build') 
-		mpicc -o ${2}.out ${2}.c;;
+		mpic++ -std=c++11 -o ${2}.out ${2}.cpp;;
 	'run')
 		mpirun --hostfile hostfile -np ${3} ${2}.out;;
 	'launch')
-		mpicc -o ${2}.out ${2}.c
-		#mpirun --hostfile hostfile -np ${3} ${2}.out;;
+		mpic++ -std=c++11 -o ${2}.out ${2}.cpp
 		mpirun --hostfile hostfile -n ${3} --oversubscribe ${2}.out;;
-esac
+esac	
